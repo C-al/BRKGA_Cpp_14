@@ -5,15 +5,15 @@
 #include "nsbrkga.hpp"      // ★★★ 唯一 BRKGA求解器源码 引入点 ★★★
 
 using namespace std::chrono;
-using NSBRKGA::NsbrkgaParams;
-using NSBRKGA::ExternalControlParams;
-
+using NSBRKGA::NsbrkgaParams; 
+using NSBRKGA::ExternalControlParams; 
+   
 
 //--------------------------- PIMPL 实现 ---------------------------//
-
+ 
 class __declspec(dllexport) BrkgaWrapper::Impl {
 
-// 成员变量
+// 成员变量 
 public:
     NsbrkgaParams params;
 
@@ -36,7 +36,7 @@ public:
         unsigned maxStallGenerations,
         double maxSeconds,
         const std::vector<std::vector<double>>& initSolutions
-) {
+    ) {
         using namespace std::chrono;
 
         std::vector<NSBRKGA::Sense> senses = {
@@ -109,7 +109,7 @@ public:
                     relImprovement = absImprovement / fabs(bestFitness);
                 }
 
-                // ★ 最小改进判定（绝对 OR 相对）
+                // 最小改进判定（绝对 OR 相对）
                 if (absImprovement >= absImprovementThreshold ||
                     relImprovement >= relImprovementThreshold)
                 {
@@ -161,7 +161,7 @@ void BrkgaWrapper::loadConfig(const std::string& filename)
 {
     NSBRKGA::readConfiguration(filename, pImpl->params);
 }
-
+ 
 double BrkgaWrapper::solve(
     DecoderBase& decoder,
     unsigned chromosomeSize,

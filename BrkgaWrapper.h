@@ -6,12 +6,12 @@
 // 前置声明 params (避免头文件污染)
 namespace NSBRKGA {
     struct NsbrkgaParams;
-}
-
+} 
+  
 // Wrapper（指针 + 转发）：前台服务员，接受输入（点菜），转发任务给后台厨师（Impl），输出结果（端菜）
 class __declspec(dllexport)  BrkgaWrapper {
 public: 
-    BrkgaWrapper();
+    BrkgaWrapper(); 
     ~BrkgaWrapper();
 
     // 加载配置文件参数（覆盖）

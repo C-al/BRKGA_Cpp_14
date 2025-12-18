@@ -1,13 +1,27 @@
 #pragma once
+#include "BrkgaWrapper.h"
 #include <unordered_map>
 #include <string>
 #include <vector>
+  
+struct BrkgaJsonSettings {
+    // 外部参数
+    double absImprovementThreshold;             // 绝对改进阈值
+    double relImprovementThreshold;             // 相对改进阈值(1e-4 = 0.01%)
+    unsigned maxGenerations;                    // 最大迭代代数
+    unsigned maxStallGenerations;               // 最大无改善代数
+    double maxSeconds;                          // 最大运行时间（秒）
+
+    // 内部参数（cfg）
+    std::unordered_map<std::string, std::string> paramMap;
+};
 
 class __declspec(dllexport) BrkgaAdapter {
 public:
-    BrkgaAdapter();
+    BrkgaAdapter(int _chromosomeSize);
+    void test();   
 
-    void test();
+    void LoadBrkgaJsonSettings(const std::string& jsonPath);
 
     // 设置参数（字符串形式，便于业务层改动）
     void setParam(const std::string& key, const std::string& value);
@@ -23,15 +37,11 @@ public:
     );
 
 private:
-	// --- BRKGA 基础/高阶 参数
+	// --- 内部参数：BRKGA 参数
     std::string configFilePath;  // 配置文件路径
-	std::unordered_map<std::string, std::string> paramMap;  // 算法参数哈希表
 
-    // --- 宏观参数
-    unsigned chromosomeSize;                    // 每条染色体基因数量
-    double absImprovementThreshold;             // 绝对改进阈值
-    double relImprovementThreshold;             // 相对改进阈值(1e-4 = 0.01%)
-    unsigned maxGenerations;                    // 最大迭代代数
-    unsigned maxStallGenerations;               // 最大无改善代数
-    double maxSeconds;                          // 最大运行时间（秒）
+public:
+    // BRKGA参数
+    unsigned chromosomeSize;                    // 每条染色体基因数量，程序算法层面决定
+    BrkgaJsonSettings brkgaSetting;
 };

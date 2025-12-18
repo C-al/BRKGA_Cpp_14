@@ -1,34 +1,60 @@
 #include "BrkgaAdapter.h"
-#include "BrkgaWrapper.h"
 #include <fstream>
 #include <iostream>
 #include "SimpleDecoder.h"
+#include <nlohmann/json.hpp>
 
-BrkgaAdapter::BrkgaAdapter() {
-    // 初始化参数配置路径
+BrkgaAdapter::BrkgaAdapter(int _chromosomeSize): chromosomeSize(_chromosomeSize){
+    // 初始化BRKGA源码读取参数配置的路径
     configFilePath = "C:\\SwiftPack\\temp\\BRKGA\\param.txt";
+       
+    // 高级参数暂时直接给定
+    setParam("SHAKE_INTERVAL", "0");
+    setParam("RESET_INTERVAL", "0");
+    setParam("EXCHANGE_INTERVAL", "0");
+    setParam("NUM_EXCHANGE_INDIVIDUALS", "0");
+    setParam("PATH_RELINK_INTERVAL", "0");
+}
 
-    chromosomeSize = 1;                     // 每条染色体基因数量
-    absImprovementThreshold = 1;            // 绝对改进阈值
-    relImprovementThreshold = 5e-4;         // 相对改进阈值(1e-4 = 0.01%)
-    maxGenerations = 100;                   // 最大迭代代数
-    maxStallGenerations = 20;               // 最大无改善代数
-    maxSeconds = 3600.0;                    // 最大运行时间（秒）
+void BrkgaAdapter::LoadBrkgaJsonSettings(const std::string& jsonPath)
+{
+    std::ifstream in(jsonPath);
+    if (!in.is_open()) {
+        return;
+    }
+    nlohmann::json j;
+    in >> j;
 
-    // 设置默认参数
-    paramMap["POPULATION_SIZE"] = "50";
-    paramMap["MIN_ELITES_PERCENTAGE"] = "0.20";
-    paramMap["MAX_ELITES_PERCENTAGE"] = "0.30";
-    paramMap["MUTATION_PROBABILITY"] = "0.10";
-    paramMap["MUTATION_DISTRIBUTION"] = "20.0";
-    paramMap["NUM_ELITE_PARENTS"] = "2";
-    paramMap["TOTAL_PARENTS"] = "3";
-    paramMap["BIAS_TYPE"] = "QUADRATIC";
-    paramMap["DIVERSITY_TYPE"] = "NONE";
-    paramMap["NUM_INDEPENDENT_POPULATIONS"] = "1";
-    paramMap["NUM_INCUMBENT_SOLUTIONS"] = "1";
-    paramMap["PR_TYPE"] = "ALLOCATION";
-    paramMap["PR_PERCENTAGE"] = "1.0";
+    // 外部参数（注意：JSON 没 chromosomeSize，这个你运行时计算后再填）
+    if (j.contains("absImprovementThreshold")) brkgaSetting.absImprovementThreshold = j["absImprovementThreshold"].get<double>();
+    if (j.contains("relImprovementThreshold")) brkgaSetting.relImprovementThreshold = j["relImprovementThreshold"].get<double>();
+    if (j.contains("maxGenerations")) brkgaSetting.maxGenerations = j["maxGenerations"].get<unsigned>();
+    if (j.contains("maxStallGenerations")) brkgaSetting.maxStallGenerations = j["maxStallGenerations"].get<unsigned>();
+    if (j.contains("maxSeconds")) brkgaSetting.maxSeconds = j["maxSeconds"].get<double>();
+
+    // 内部参数（这些在 JSON 里是 string）
+    static const std::vector<std::string> keys = {
+        "POPULATION_SIZE",
+        "MIN_ELITES_PERCENTAGE",
+        "MAX_ELITES_PERCENTAGE",
+        "MUTATION_PROBABILITY",
+        "MUTATION_DISTRIBUTION",
+        "NUM_ELITE_PARENTS",
+        "TOTAL_PARENTS",
+        "BIAS_TYPE",
+        "DIVERSITY_TYPE",
+        "NUM_INDEPENDENT_POPULATIONS",
+        "NUM_INCUMBENT_SOLUTIONS",
+        "PR_TYPE",
+        "PR_PERCENTAGE"
+    };
+
+    for (const auto& k : keys) {
+        if (j.contains(k)) {
+            // JSON里是 string（你现在就是这样）
+            brkgaSetting.paramMap[k] = j[k].get<std::string>();
+        }
+    }
 }
 
 void BrkgaAdapter::test()
@@ -39,7 +65,7 @@ void BrkgaAdapter::test()
 }
 
 void BrkgaAdapter::setParam(const std::string& key, const std::string& value) {
-    paramMap[key] = value;
+    brkgaSetting.paramMap[key] = value;
 }
 
 void BrkgaAdapter::setConfigFile(const std::string& path) {
@@ -53,7 +79,7 @@ void BrkgaAdapter::writeConfig() {
         return;
     }
 
-    for (auto& kv : paramMap) {
+    for (auto& kv : brkgaSetting.paramMap) {
         out << kv.first << " " << kv.second << "\n";
     }
 
@@ -70,15 +96,19 @@ double BrkgaAdapter::solve(
     BrkgaWrapper wrapper;
     // 读取配置文件参数
     wrapper.loadConfig(configFilePath);     
+    
+    std::cout << "[BRKGA] chromosome_size = " << chromosomeSize << std::endl;
+    std::cout << "[BRKGA] population_size = " << brkgaSetting.paramMap["POPULATION_SIZE"] << std::endl;
+
     // 求解
     return wrapper.solve(
         decoder,
-        absImprovementThreshold,
-        relImprovementThreshold,
         chromosomeSize,
-        maxGenerations,
-        maxStallGenerations,
-        maxSeconds,
+        brkgaSetting.absImprovementThreshold,
+        brkgaSetting.relImprovementThreshold,
+        brkgaSetting.maxGenerations,
+        brkgaSetting.maxStallGenerations,
+        brkgaSetting.maxSeconds,
         initSolutions
     );
 }
